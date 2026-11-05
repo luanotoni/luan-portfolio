@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luan Otoni, DevOps e cloud</title>
+  <meta name="description" content="Portfólio de Luan Otoni: DevOps e infraestrutura cloud em Serra, ES. Projetos lidos ao vivo do GitHub, trabalho no LEDS e contato.">
+  <meta name="theme-color" content="#0b0d13">
+  <meta property="og:title" content="Luan Otoni, DevOps e cloud">
+  <meta property="og:description" content="Kubernetes no LEDS, Terraform na AWS e projetos lidos direto do GitHub.">
+  <meta property="og:image" content="assets/web/moon-disc.webp">
+  <link rel="icon" href="assets/web/moon-disc.webp" type="image/webp">
+  <link rel="preload" href="assets/fonts/tektur-400-900.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/chakra-petch-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/site.css">
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+    <symbol id="ship" viewBox="-34 -15 66 30">
+      <path class="ship-flame" d="M-21 -1.4 L-33 0 L-21 1.4 Z"/>
+      <path class="hull-m" d="M3 -3 L-11 -14 L-16 -13 L-10 -2.5 Z M3 3 L-11 14 L-16 13 L-10 2.5 Z"/>
+      <path class="hull-l" d="M30 0 L6 -4.2 L-17 -3.4 L-21 0 L-17 3.4 L6 4.2 Z"/>
+      <path class="hull-d" d="M30 0 L6 1.2 L-17 1.4 L-21 0 L-17 3.4 L6 4.2 Z"/>
+      <path class="ship-stripe" d="M-15 -0.5 H18 V0.5 H-15 Z"/>
+      <ellipse class="glass" cx="11" cy="0" rx="5" ry="1.9"/>
+    </symbol>
+    <symbol id="invader" viewBox="0 0 11 8"><path fill="currentColor" d="M2 0h1v1h-1zM8 0h1v1h-1zM3 1h1v1h-1zM7 1h1v1h-1zM2 2h7v1h-7zM1 3h2v1h-2zM4 3h3v1h-3zM8 3h2v1h-2zM0 4h11v1h-11zM0 5h1v1h-1zM2 5h7v1h-7zM10 5h1v1h-1zM0 6h1v1h-1zM2 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM3 7h2v1h-2zM6 7h2v1h-2z"/></symbol>
+  </defs></svg>
+  <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+  <canvas class="sky" id="sky" aria-hidden="true"></canvas>
+
+  <nav class="route" id="route" aria-label="Rota da página">
+    <ol>
+      <li><a href="#topo" data-warp><img src="assets/web/moon-disc.webp" width="600" height="599" alt=""><span>Início</span></a></li>
+      <li><a href="#sobre" data-warp><img src="assets/web/luan-avatar.webp" width="396" height="396" alt=""><span>Sobre</span></a></li>
+      <li><a href="#projetos" data-warp><canvas class="route-ic" data-ic="droid" aria-hidden="true"></canvas><span>Projetos</span></a></li>
+      <li><a href="#observatorio" data-warp><canvas class="route-ic" data-ic="scope" aria-hidden="true"></canvas><span>Observatório</span></a></li>
+      <li><a href="#leds" data-warp><img src="assets/web/jupiter.webp" width="640" height="640" alt=""><span>LEDS</span></a></li>
+      <li><a href="#ferramentas" data-warp><canvas class="route-ic" data-ic="stars" aria-hidden="true"></canvas><span>Ferramentas</span></a></li>
+      <li><a href="#contato" data-warp><img class="saturn" src="assets/web/saturn.webp" width="1400" height="678" alt=""><span>Contato</span></a></li>
+    </ol>
+    <canvas class="route-ship" id="route-ship" aria-hidden="true"></canvas>
+  </nav>
+
+  <header class="hero" id="topo">
+    <nav class="bar container" aria-label="Principal">
+      <a class="mark" href="#topo" data-warp>Luan Otoni</a>
+      <ul>
+        <li><a href="#sobre" data-warp>Sobre</a></li>
+        <li><a href="#projetos" data-warp>Projetos</a></li>
+        <li><a href="#leds" data-warp>LEDS</a></li>
+        <li><a href="#contato" data-warp>Contato</a></li>
+        <li><button type="button" class="sfx" id="navi-open" aria-haspopup="dialog">Saltar <kbd>/</kbd></button></li>
+        <li><button type="button" class="sfx" id="sfx" aria-pressed="false">Som</button></li>
+      </ul>
+    </nav>
+
+    <img class="planet p-hero" src="assets/web/earth.webp" width="640" height="640" alt="" aria-hidden="true" data-depth="0.18">
+
+    <div class="hero-in container">
+      <h1 class="name">
+        <span class="visually-hidden">Luan Otoni</span>
+        <span class="row" aria-hidden="true"><span class="paint" style="--i:0">Luan</span></span>
+        <span class="row" aria-hidden="true"><img class="moon" id="moon" src="assets/web/moon-disc.webp" width="600" height="599" alt="" fetchpriority="high"><span class="paint" style="--i:1">toni</span></span>
+      </h1>
+      <div class="hero-foot">
+        <p class="lead">DevOps e cloud. Mantenho a infraestrutura do ConectaFAPES no ar.</p>
+        <div class="actions">
+          <a class="button" href="#projetos" data-warp>Ver projetos</a>
+          <a class="button quiet" href="#contato" data-warp>Falar comigo</a>
+        </div>
+        <p class="pulse" id="pulse" role="status">Último push em <a href="https://github.com/luanotoni/conduit-aws-terraform" target="_blank" rel="noopener">conduit-aws-terraform</a>, 2026-10-30.</p>
+      </div>
+    </div>
+
+  </header>
+
+  <main id="conteudo">
+    <section class="about" id="sobre" aria-labelledby="sobre-h">
+      <div class="container about-in">
+        <div class="license-wrap">
+          <div class="license" id="license" tabindex="0" role="button" aria-pressed="false" aria-label="Licença de piloto. Arraste ou clique para virar">
+            <div class="face front">
+              <p class="lic-top">Licença de piloto</p>
+              <div class="lic-body">
+                <img src="assets/web/luan-avatar.webp" width="396" height="396" alt="Retrato do Luan em pixel art, de óculos azuis, rindo" loading="lazy">
+                <dl>
+                  <div><dt>Classe</dt><dd>DevOps e cloud</dd></div>
+                  <div><dt>Base</dt><dd>Serra, ES</dd></div>
+                  <div><dt>Procurando</dt><dd>Infra, SRE e plataforma</dd></div>
+                </dl>
+              </div>
+              <svg class="lic-code" viewBox="0 0 200 24" preserveAspectRatio="none" aria-hidden="true"><g id="barcode"></g></svg>
+            </div>
+            <div class="face back">
+              <p class="lic-top">Verso</p>
+              <dl class="lic-back">
+                <div><dt>Formação</dt><dd>Técnico em Informática para Internet, IFES. Sistemas de Informação, IFES, desde 2025.</dd></div>
+                <div><dt>Estudando</dt><dd>DevSecOps e segurança.</dd></div>
+              </dl>
+            </div>
+          </div>
+          <p class="hint">Arraste a licença ou clique para virar.</p>
+        </div>
+        <div class="about-text">
+          <h2 id="sobre-h">Quem pilota</h2>
+          <p class="statement">Sou DevOps em Serra, ES. Cuido da infraestrutura do ConectaFAPES no LEDS, o laboratório do IFES Campus Serra.</p>
+          <p>Clusters Kubernetes, pipelines com Quality Gate, observabilidade e ambientes de dev e prod que não se misturam. Estudo Sistemas de Informação no IFES e, agora, DevSecOps. Fora do terminal: desenho digital, concept design e um Hyprland que nunca fica pronto.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="projects" id="projetos" aria-labelledby="projetos-h">
+      <div class="container">
+        <div class="sec-head">
+          <h2 id="projetos-h">Projetos</h2>
+          <p class="source">Lidos do meu <a href="https://github.com/luanotoni" target="_blank" rel="noopener">GitHub</a> <span id="gh-when">a cada visita</span>.</p>
+        </div>
+        <div id="repos" aria-live="polite">
+          <ol class="repo-list">
+          <li class="repo"><h3><a href="https://github.com/luanotoni/conduit-aws-terraform" target="_blank" rel="noopener">conduit-aws-terraform</a></h3><p>Legacy 2017 Django app modernized and deployed on AWS with Terraform: ECS Fargate, RDS, CloudFront, WAF, OIDC CI/CD, Trivy gates, OpenTelemetry tracing and a tested SLO alarm</p><p class="repo-meta"><span>Python</span><span>push em 2026-10-30</span></p></li>
+          <li class="repo"><h3><a href="https://github.com/luanotoni/varal-de-pedidos" target="_blank" rel="noopener">varal-de-pedidos</a></h3><p>Projeto do Varal de Issues e Pedidos Web.</p><p class="repo-meta"><span>JavaScript</span><span>push em 2025-04-07</span></p></li>
+          </ol>
+        </div>
+      </div>
+      <div class="obs" id="observatorio" role="group" aria-label="Observatório: clique no telescópio, nas antenas ou no chão">
+        <canvas id="obs-canvas" aria-hidden="true"></canvas>
+        <p class="bot-say rover-say" id="rover-say" role="status"></p>
+        <p class="bot-say obs-say" id="obs-say" role="status"></p>
+        <button type="button" class="rover-hit" id="rover-hit" aria-label="Rover. Clique para ele fazer uma varredura"></button>
+        <button type="button" class="scope-hit" id="scope-hit" aria-label="Telescópio. Clique para olhar pela ocular"></button>
+      </div>
+    </section>
+
+    <section class="work" id="leds" aria-labelledby="leds-h">
+      <img class="planet p-leds" src="assets/web/jupiter.webp" width="640" height="640" alt="" aria-hidden="true" loading="lazy" data-depth="0.12">
+      <div class="container work-in">
+        <h2 id="leds-h">Registros de missão no LEDS, desde 2023</h2>
+        <ol class="work-list log">
+          <li>
+            <h3>Plataforma ConectaFAPES</h3>
+            <p>Kubernetes RKE2, charts Helm, o MariaDB do GLPI em produção e o modelo de ServiceDesk do time.</p>
+            <p class="when">2024 a 2026</p>
+          </li>
+          <li>
+            <h3>Otto</h3>
+            <p>Atendimento do ConectaFAPES. Separei dev e prod e pus o Quality Gate do SonarQube antes do deploy.</p>
+            <p class="when">2026</p>
+          </li>
+          <li>
+            <h3>Workstage</h3>
+            <p>O portal Backstage do LEDS, com painéis do Amazon Managed Grafana e segredos fora do código.</p>
+            <p class="when">2026</p>
+          </li>
+          <li>
+            <h3>Validar ideias</h3>
+            <p>Coordenei a iniciação científica sobre como avaliar ideias em ambientes de inovação.</p>
+            <p class="when">2023 a 2024</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="tools" id="ferramentas" aria-labelledby="tools-h">
+      <div class="container tools-in">
+        <div class="tools-text">
+          <h2 id="tools-h">Onde usei cada ferramenta</h2>
+          <div class="const-panel" id="const-panel" aria-live="polite">
+            <p>Escolha uma constelação no mapa.</p>
+          </div>
+        </div>
+        <div class="sky-map" id="sky-map"></div>
+      </div>
+    </section>
+
+    <section class="contact" id="contato" aria-labelledby="contato-h">
+      <img class="planet saturn p-contact" src="assets/web/saturn.webp" width="1400" height="678" alt="" aria-hidden="true" loading="lazy" data-depth="0.16">
+      <div class="container contact-in">
+        <h2 id="contato-h">Vagas em infra, cloud ou plataforma, um projeto ou só um oi.</h2>
+        <a class="mail" href="mailto:luan.otoni.dev@gmail.com?subject=Oi%20Luan">luan.otoni.dev<span class="at">@gmail.com</span></a>
+        <div class="contact-foot">
+          <p>Remoto ou híbrido. <button type="button" class="copy" id="copy" data-mail="luan.otoni.dev@gmail.com">Copiar e-mail</button></p>
+          <ul>
+            <li><a href="https://github.com/luanotoni" target="_blank" rel="noopener">GitHub</a></li>
+            <li><a href="https://www.linkedin.com/in/luan-otoni-de-oliveira-2b12a12ab/" target="_blank" rel="noopener">LinkedIn</a></li>
+            <li><a href="https://www.instagram.com/luanotoni96/" target="_blank" rel="noopener">Instagram</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot container">
+    <svg class="wordmark" viewBox="0 0 1000 150" role="img" aria-label="Luan Otoni"><text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs">LUAN OTONI</text></svg>
+    <div class="legal">
+      <p>Serra, ES. Fotos de planetas da NASA, domínio público. Lua de Gregory H. Revera, <a href="https://commons.wikimedia.org/wiki/File:FullMoon2010.jpg" target="_blank" rel="noopener">CC BY-SA 3.0</a>.</p>
+      <a class="egg" href="jogo.html" id="egg" aria-label="Um invasor escondido. Siga para o jogo secreto"><svg viewBox="0 0 11 8" aria-hidden="true"><use href="#invader"/></svg></a>
+      <p>© 2026 Luan Otoni</p>
+    </div>
+  </footer>
+
+  <dialog class="navi" id="navi" aria-labelledby="navi-h">
+    <form method="dialog" class="navi-in">
+      <h2 id="navi-h">Pra onde saltamos?</h2>
+      <label class="visually-hidden" for="navi-q">Destino</label>
+      <input id="navi-q" type="text" placeholder="Projetos, LEDS, contato..." autocomplete="off" role="combobox" aria-controls="navi-list" aria-expanded="true">
+      <ul id="navi-list" role="listbox" aria-label="Destinos"></ul>
+      <p class="navi-hint">Setas escolhem, Enter salta, Esc fecha.</p>
+    </form>
+  </dialog>
+
+  <p class="bot-say droid-say" id="droid-say" role="status"></p>
+  <button type="button" class="droid-hit" id="droid-hit" aria-label="C1-CD, o droid do site. Clique para ele pular, arraste e solte em cima de um projeto, setas para andar"></button>
+
+  <script src="js/site.js" defer></script>
+  <script src="js/pixel.js" defer></script>
+</body>
+</html>

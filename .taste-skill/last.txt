@@ -1,0 +1,38 @@
+TASTESKILL · INSPECT   index.html
+
+MEASURED (first viewport listed)
+  hero headline   "LUAN OTONI LUAN TONI"  4 words · 2 line(s) · 193px (13.4vw) · Panchang 800 · tracking -0.02em · leading 0.92
+  @768px          2 line(s) · 102.9px
+  @390px          2 line(s) · 68.3px
+  typefaces       General Sans 94%, Panchang 4%
+  sizes in use    13 / 14 / 15 / 18 / 19 / 20 / 26 / 32 / 46 / 63 / 68 / 74 / 130 / 193 px   body 19px / 1.5
+  colour          page #05060a · button #161b29
+  page            12 screens · 547 words · 22 images · hero media 100% canvas
+  headings        10 · longest 3 line(s) · median 2 words
+
+WARN — fix, or be able to defend
+  [size-count] @1440px (+768, 390)  14 different font sizes (13, 14, 15, 18, 19, 20, 26, 32, 46, 63, 68, 74, 130, 193).
+      → A page needs about five: display, heading, lead, body, small.
+  [pinned-over-picture] @1440px (+768)  Pinned large text slides across pictures while the page scrolls: "O futuro pintado em 1975" (screen 9, 85% over a picture)
+      → Jurors read a pinned title crossing drawings or photographs as a collision. Keep the pictures in the column the title does not occupy, or unpin it.
+  [long-pin] @1440px  The same large text stays on screen for 4 screens in a row: "O futuro pintado em 1975"
+      → A pinned element earns two screens, and something must change at each. Shorten the run or give every screen its own content.
+  [blank-gap] @768px (+390)  A 556px stretch at 10828px holds nothing.
+      → Check that it is a deliberate rest (once per page at most); otherwise close it to the normal section gap.
+  [palette-cream] @390px  Yellow-cream background (section #f4ead7).
+      → Use the drawn palette. If you want warmth, take a low-chroma stone or bone, not a yellow cream.
+
+LOOK AT THE RENDER — open these with your image viewer / Read tool before saying anything about quality:
+  desktop 1440px  .taste-skill/inspect/desktop-fold.jpg
+                  .taste-skill/inspect/desktop-page-01.jpg
+                  .taste-skill/inspect/desktop-page-02.jpg
+                  .taste-skill/inspect/desktop-page-03.jpg
+  tablet 768px    .taste-skill/inspect/tablet-fold.jpg
+                  .taste-skill/inspect/tablet-page-01.jpg
+                  .taste-skill/inspect/tablet-page-02.jpg
+  mobile 390px    .taste-skill/inspect/mobile-fold.jpg
+                  .taste-skill/inspect/mobile-page-01.jpg
+                  .taste-skill/inspect/mobile-page-02.jpg
+
+report: .taste-skill/inspect/report.json
+RESULT: 0 FAIL, 5 WARN — measurements pass. Passing the meter is the floor, not the grade: score the screenshots with references/critique.md.

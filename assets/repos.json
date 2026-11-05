@@ -1,0 +1,54 @@
+{
+ "saved": "2026-11-05T09:51:30+00:00",
+ "repos": [
+  {
+   "name": "conduit-aws-terraform",
+   "description": "Legacy 2017 Django app modernized and deployed on AWS with Terraform: ECS Fargate, RDS, CloudFront, WAF, OIDC CI/CD, Trivy gates, OpenTelemetry tracing and a tested SLO alarm",
+   "html_url": "https://github.com/luanotoni/conduit-aws-terraform",
+   "homepage": null,
+   "language": "Python",
+   "topics": [
+    "aws",
+    "cloudfront",
+    "devops",
+    "devsecops",
+    "django",
+    "ecs-fargate",
+    "github-actions",
+    "infrastructure-as-code",
+    "observability",
+    "opentelemetry",
+    "terraform",
+    "trivy"
+   ],
+   "stargazers_count": 1,
+   "pushed_at": "2026-10-30T15:52:03Z",
+   "fork": false,
+   "archived": false
+  },
+  {
+   "name": "luanotoni",
+   "description": null,
+   "html_url": "https://github.com/luanotoni/luanotoni",
+   "homepage": null,
+   "language": null,
+   "topics": [],
+   "stargazers_count": 0,
+   "pushed_at": "2025-07-24T20:32:15Z",
+   "fork": false,
+   "archived": false
+  },
+  {
+   "name": "varal-de-pedidos",
+   "description": "Projeto do Varal de Issues e Pedidos Web.",
+   "html_url": "https://github.com/luanotoni/varal-de-pedidos",
+   "homepage": "https://varal-de-pedidos.vercel.app",
+   "language": "JavaScript",
+   "topics": [],
+   "stargazers_count": 0,
+   "pushed_at": "2025-04-07T02:20:12Z",
+   "fork": false,
+   "archived": false
+  }
+ ]
+}

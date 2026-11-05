@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Defesa da VPC</title>
+  <meta name="description" content="O jogo escondido no portfólio de Luan Otoni: defenda a us-east-1.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#05060a">
+  <link rel="icon" href="assets/web/moon-disc.webp" type="image/webp">
+  <link rel="stylesheet" href="css/jogo-base.css">
+  <link rel="stylesheet" href="css/game.css">
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<body class="arcade">
+  <canvas class="sky" id="sky" aria-hidden="true"></canvas>
+  <div class="reticle" id="reticle" aria-hidden="true"><span></span></div>
+
+  <section class="crawl" id="crawl" aria-label="Introdução">
+    <p class="far">Há muito tempo, numa região muito, muito distante…</p>
+    <h1 class="logo"><span>Defesa</span><span>da VPC</span></h1>
+    <div class="crawl-view">
+      <div class="crawl-text">
+        <p class="ep">Episódio IV</p>
+        <p class="ep-title">Uma nova infra</p>
+        <p>É um período de tráfego hostil. Bots, injeções de SQL e ataques DDoS cercam a VPC da região us-east-1.</p>
+        <p>Armado com um WAF, security groups e uma NACL, um piloto solitário decola para segurar a linha antes que as três zonas de disponibilidade caiam.</p>
+        <p>Se elas caírem, restará um único comando: terraform destroy.</p>
+      </div>
+    </div>
+    <button type="button" class="skip-crawl" id="skip">Pular introdução</button>
+  </section>
+
+  <main class="arcade-main" id="arcade" hidden>
+    <a class="back" href="index.html">← Voltar ao portfólio</a>
+    <div class="cabinet" data-ui>
+      <div class="screen" id="screen" tabindex="0" aria-label="Jogo Defesa da VPC">
+        <canvas id="game" width="320" height="240">O jogo precisa de JavaScript.</canvas>
+        <button class="button start" id="start" type="button">Começar</button>
+      </div>
+      <div class="pad" aria-label="Controles de toque">
+        <button type="button" data-key="left" aria-label="Mover para a esquerda">◀</button>
+        <button type="button" data-key="right" aria-label="Mover para a direita">▶</button>
+        <button type="button" class="fire" data-key="fire">Fogo</button>
+      </div>
+      <div class="under">
+        <span id="best">Recorde neste navegador: 0</span>
+        <span class="keys"><kbd>←</kbd> <kbd>→</kbd> movem, <kbd>espaço</kbd> atira, <kbd>P</kbd> pausa</span>
+        <button type="button" id="sound" aria-pressed="false">Som desligado</button>
+      </div>
+    </div>
+    <ul class="legend" aria-label="Pontos por invasor">
+      <li><canvas width="12" height="8" data-sprite="ddos" aria-hidden="true"></canvas><span>DDoS</span><span class="pts">30</span></li>
+      <li><canvas width="12" height="8" data-sprite="sqli" aria-hidden="true"></canvas><span>SQL injection</span><span class="pts">20</span></li>
+      <li><canvas width="12" height="8" data-sprite="bot" aria-hidden="true"></canvas><span>Bot</span><span class="pts">10</span></li>
+      <li><canvas width="16" height="7" data-sprite="ufo" aria-hidden="true"></canvas><span>Zero-day</span><span class="pts">?</span></li>
+    </ul>
+  </main>
+
+  <script src="js/jogo-ceu.js" defer></script>
+  <script src="js/game.js" defer></script>
+  <script>
+    (() => {
+      const crawl = document.getElementById('crawl'), arcade = document.getElementById('arcade');
+      let done = false;
+      const finish = () => {
+        if (done) return; done = true;
+        crawl.hidden = true; arcade.hidden = false;
+        document.getElementById('screen').focus({ preventScroll: true });
+      };
+      document.getElementById('skip').addEventListener('click', finish);
+      addEventListener('keydown', (e) => { if (!done && ['Enter', 'Escape', 'Space'].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); finish(); } });
+      crawl.addEventListener('click', (e) => { if (e.target === crawl) finish(); });
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) finish(); else setTimeout(finish, 30000);
+    })();
+  </script>
+</body>
+</html>
