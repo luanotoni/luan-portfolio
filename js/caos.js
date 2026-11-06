@@ -71,14 +71,31 @@
   // the block under (x, y), only when a visible glyph is really there, so bolts pass between lines
   function textAt(el, x, y) {
     if (el.classList?.contains('ch')) return el._gone ? null : hostOf(el.parentElement);
+    // the caret is quick; the check is geometric, so a stretched link over a card still lets the card's text be hit
     const c = caretAt(x, y);
-    if (!c || c.node?.nodeType !== 3 || !el.contains(c.node)) return null;
-    if (c.node.parentElement?._gone) return null;
-    const t = c.node.data;
-    for (const i of [c.off - 1, c.off]) {
-      if (i < 0 || i >= t.length || !t[i].trim()) continue;
-      rng.setStart(c.node, i); rng.setEnd(c.node, i + 1); const r = rng.getBoundingClientRect();
-      if (x >= r.left - 1 && x <= r.right + 1 && y >= r.top && y <= r.bottom) return hostOf(c.node.parentElement);
+    if (c?.node?.nodeType === 3 && !c.node.parentElement?._gone && !c.node.parentElement?.closest(SKIP)) {
+      const t = c.node.data;
+      for (const i of [c.off - 1, c.off]) {
+        if (i < 0 || i >= t.length || !t[i].trim()) continue;
+        rng.setStart(c.node, i); rng.setEnd(c.node, i + 1); const r = rng.getBoundingClientRect();
+        if (x >= r.left - 1 && x <= r.right + 1 && y >= r.top && y <= r.bottom) return hostOf(c.node.parentElement);
+      }
+    }
+    // no caret (user-select: none, buttons, 3D cards): scan the text under the element by hand
+    const root = el.closest?.('.license, .feature, .repo, button, li') || el;
+    if (root.closest(SKIP)) return null;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let budget = 900;
+    while (w.nextNode() && budget > 0) {
+      const n = w.currentNode; if (!n.data.trim() || n.parentElement._gone || n.parentElement.closest(SKIP)) continue;
+      budget -= n.data.length;
+      rng.selectNodeContents(n);
+      if (![...rng.getClientRects()].some((r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)) continue;
+      for (let i = 0; i < n.data.length; i++) {
+        if (!n.data[i].trim()) continue;
+        rng.setStart(n, i); rng.setEnd(n, i + 1); const r = rng.getBoundingClientRect();
+        if (x >= r.left - 1 && x <= r.right + 1 && y >= r.top && y <= r.bottom) return hostOf(n.parentElement);
+      }
     }
     return null;
   }
@@ -217,7 +234,7 @@
     b.gone = true; b.back = performance.now() + 24000;
     const L = local(b.img, 0, 0), rect = { left: L.cx - L.w / 2, top: L.cy - L.h / 2, width: L.w, height: L.h }, big = L.w > 150;
     K.pixelize(b.cv, rect, Math.max(2, Math.round(b.cv.width / (big ? 20 : 8))), L.cx, L.cy, big ? 420 : 200, { g: 0, floor: false, drag: 0.985, life: 2.8 });
-    b.img.style.opacity = '0';
+    b.img.style.visibility = 'hidden';
     burst(L.cx, L.cy, 30, 'o', 520, 0.9); burst(L.cx, L.cy, 20, 'y', 380, 0.6);
     K.ring(L.cx, L.cy, L.w * 0.9, 'y');
     if (big) { K.ring(L.cx, L.cy, L.w * 2.2, 'c', true); if (cause === 'station') K.flash = 0.25; else { K.flash = 0.35; K.quake(600); } }
@@ -234,7 +251,7 @@
       if (!b.gone || now < b.back) continue;
       b.gone = false; b.hp = b.max;
       b.img.addEventListener('load', () => { b.g.clearRect(0, 0, b.cv.width, b.cv.height); b.g.drawImage(b.img, 0, 0, b.cv.width, b.cv.height); }, { once: true });
-      b.img.src = b.orig; b.img.style.opacity = '';
+      b.img.src = b.orig; b.img.style.visibility = '';
       b.img.classList.remove('reform'); void b.img.offsetWidth; b.img.classList.add('reform'); setTimeout(() => b.img.classList.remove('reform'), 1300);
     }
   }
@@ -274,11 +291,18 @@
 
   // no ship on touch screens: a tap on anything that is not a control fires at that spot
   if (!K.ship.on) addEventListener('click', (e) => {
-    if (e.target.closest('a, button, input, textarea, select, label, summary, [role="button"], .license, video, dialog, .obs')) return;
+    if (e.target.closest('a, button, input, textarea, select, label, summary, [role="button"], .license, video, dialog')) return;
     const x = e.clientX, y = e.clientY, b = { x, y, vx: 0, vy: -1300, power: 1 };
     burst(x, y, 6, 'r', 160, 0.25);
     for (const h of hits) { const r = h.rect(); if (r && x > r.left && x < r.right && y > r.top && y < r.bottom) { h.onHit(b); return; } }
     K.impact(x, y);
+  });
+
+  // inside the observatory strip the shot lands where you click: buildings, antennas, the ground
+  if (K.ship.on) addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0 || !e.target.closest('.obs') || e.target.closest('button') || !K.ship.alive) return;
+    const x = e.clientX, y = e.clientY;
+    setTimeout(() => K.rover?.impact?.(x, y, 1), 70);
   });
 
   K.layers.push({

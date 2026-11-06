@@ -605,7 +605,7 @@
       } else if (hp <= 25 && droid && !droid.st.sleep) { droid.emote('!'); if (Math.random() < 0.5) droid.say(pick(['Casco crítico! Passa a nave em cima de mim que eu conserto.', 'A nave tá pegando fogo! Vem pra cá!']), 2600); }
     }
     document.addEventListener('pointerover', (e) => { lock = !!e.target.closest?.('a, button, [role="button"], input, label, summary'); });
-    const isUI = (el) => el.closest?.('a, button, [role="button"], input, textarea, select, label, summary, .license, video, .obs, dialog, [contenteditable]');
+    const isUI = (el) => el.closest?.('a, button, [role="button"], input, textarea, select, label, summary, .license, video, dialog, [contenteditable]');
     if (on) addEventListener('pointerdown', (e) => {
       if (e.pointerType !== 'mouse' || e.button !== 0 || isUI(e.target) || dead > 0 || stun > 0) return;
       const now = performance.now(); if (now - lastFire < 140) return; lastFire = now; recoil = 1; open = 1;
