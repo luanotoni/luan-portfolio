@@ -280,14 +280,20 @@
     sphere(p, cx, 23.5, 2.1, ['m', 'l', 'w', 'W']); p.set(cx - 1, 22, 'o'); p.set(cx, 23, 'b');
     // wingtip cannons
     for (const gx of [2, 34]) { for (let y = 9; y < 31; y++) { p.set(gx + (gx > cx ? sp : -sp), y, 'm'); p.set(gx + 1 + (gx > cx ? sp : -sp), y, y < 12 ? 'd' : 'l'); } p.set(gx + (gx > cx ? sp : -sp), 8, o.lock ? 'r' : 'd'); p.set(gx + 1 + (gx > cx ? sp : -sp), 8, o.lock ? 'r' : 'd'); }
+    // battle damage: scorch marks, then a torn-off wingtip
+    if (o.dmg) {
+      if (o.dmg >= 3) for (let y = 20; y < 36; y++) for (let x = 31; x < 38; x++) p.clear(x, y);
+      const burn = (x, y, c) => { if (p.a[y * p.w + x]) p.set(x, y, c); };
+      [[8, 28], [28, 27], [19, 6], [22, 30], [12, 26], [19, 13], [25, 29], [5, 29]].slice(0, o.dmg * 2 + 1).forEach(([sx, sy], i) => { burn(sx, sy, 'K'); burn(sx + 1, sy, 'x'); burn(sx, sy + 1, 'x'); burn(sx - 1, sy, i & 1 ? 'O' : 'd'); });
+    }
     p.outline('k');
     return p;
   }
   const shipCache = new Map();
-  function shipFrame(eng, open, lock, boost, dir) {
-    const key = `${eng}${open}${lock}${boost}:${dir}`;
+  function shipFrame(eng, open, lock, boost, dir, dmg = 0) {
+    const key = `${eng}${open}${lock}${boost}${dmg}:${dir}`;
     if (shipCache.has(key)) return shipCache.get(key);
-    const base = fighterPx({ eng, open, lock, boost }).canvas();
+    const base = fighterPx({ eng, open, lock, boost, dmg }).canvas();
     const [c, g] = make(56, 56);
     g.translate(28, 28); g.rotate(dir * Math.PI / 16); g.drawImage(base, -19, -21);
     const im = g.getImageData(0, 0, 56, 56), a = im.data; for (let i = 3; i < a.length; i += 4) a[i] = a[i] > 110 ? 255 : 0;
@@ -344,6 +350,7 @@
   document.documentElement.addEventListener('pointerleave', () => { pointer.inside = false; });
   const hits = [];
   const fx = [];
+  const kit = { boltHooks: [], layers: [] };
   const burst = (x, y, n, col, sp = 260, life = 0.5) => { for (let i = 0; i < n; i++) fx.push({ x, y, vx: (Math.random() - 0.5) * sp, vy: (Math.random() - 0.8) * sp, g: 900, life: life * (0.6 + Math.random() * 0.6), col, s: 2 }); };
   // speech: a hologram projected toward its speaker; the cone points at `toX`
   function holo(el, text, ms, toX) {
@@ -582,14 +589,29 @@
     const S = 2;
     let x = innerWidth / 2, y = innerHeight / 2, vx = 0, vy = 0, ang = 0, angV = 0, lock = false, lastFire = 0, recoil = 0, warp = 0, spd = 0, boost = 0, open = 0, side = 1;
     const bolts = [], trail = [];
+    // hull: blaster hits knock the ship off the cursor and wear it down; at zero it blows up and comes back
+    let hp = 100, dead = 0, stun = 0, flash = 0, hurtAt = -1e9, grip = null, deaths = 0;
+    const dmgLevel = () => (hp > 75 ? 0 : hp > 50 ? 1 : hp > 25 ? 2 : 3);
+    function damage(n, kx = 0, ky = 0) {
+      if (!on || dead > 0 || !pointer.inside) return;
+      hp -= n; vx += kx; vy += ky; angV += (Math.random() - 0.5) * 50; stun = Math.max(stun, 0.3); flash = 0.14; hurtAt = performance.now();
+      burst(x, y, 8, 'y', 260, 0.35); burst(x, y, 4, 'o', 180, 0.5); sfx().tone(120, 0.18, 'sawtooth', 0.04, 60);
+      if (hp <= 0) {
+        hp = 0; dead = 3; deaths++; grip = null;
+        burst(x, y, 40, 'o', 520, 0.9); burst(x, y, 24, 'y', 360, 0.6); burst(x, y, 16, 'd', 300, 1.2); burst(x, y, 10, 'l', 420, 1);
+        sfx().tone(80, 0.7, 'sawtooth', 0.06, 30);
+        document.dispatchEvent(new CustomEvent('ship-down', { detail: deaths }));
+        droid?.emote('!'); droid?.say(pick(['A nave explodiu! Calma, eu tenho backup.', 'Perdemos a nave! Restaurando do último snapshot...', 'Nave abatida! Subindo outra réplica.']), 3000);
+      } else if (hp <= 25 && droid && !droid.st.sleep) { droid.emote('!'); if (Math.random() < 0.5) droid.say(pick(['Casco crítico! Passa a nave em cima de mim que eu conserto.', 'A nave tá pegando fogo! Vem pra cá!']), 2600); }
+    }
     document.addEventListener('pointerover', (e) => { lock = !!e.target.closest?.('a, button, [role="button"], input, label, summary'); });
     const isUI = (el) => el.closest?.('a, button, [role="button"], input, textarea, select, label, summary, .license, video, .obs, dialog, [contenteditable]');
     if (on) addEventListener('pointerdown', (e) => {
-      if (e.pointerType !== 'mouse' || e.button !== 0 || isUI(e.target)) return;
+      if (e.pointerType !== 'mouse' || e.button !== 0 || isUI(e.target) || dead > 0 || stun > 0) return;
       const now = performance.now(); if (now - lastFire < 140) return; lastFire = now; recoil = 1; open = 1;
       const dx = Math.sin(ang), dy = -Math.cos(ang), px = Math.cos(ang), py = Math.sin(ang);
       side = -side;
-      for (const s2 of [side, side * 0.6]) bolts.push({ x: x + px * s2 * 30 + dx * 16, y: y + py * s2 * 30 + dy * 16, vx: dx * 1300 + vx * 0.3, vy: dy * 1300 + vy * 0.3, life: 0.9 });
+      for (const s2 of [side, side * 0.6]) bolts.push({ x: x + px * s2 * 30 + dx * 16, y: y + py * s2 * 30 + dy * 16, vx: dx * 1300 + vx * 0.3, vy: dy * 1300 + vy * 0.3, life: 0.9, power: 1 });
       burst(x + px * side * 30 + dx * 18, y + py * side * 30 + dy * 18, 4, 'y', 120, 0.12);
       sfx().tone(1500, 0.12, 'square', 0.02, 280);
     });
@@ -597,8 +619,14 @@
     window.addEventListener('hyperspace', () => { warp = 1; });
     function step(dt) {
       if (!on) return;
-      const back = 26, gx = pointer.x - Math.sin(ang) * back, gy = pointer.y + Math.cos(ang) * back;
-      const k = 200, c = 23;
+      stun = Math.max(0, stun - dt); flash = Math.max(0, flash - dt);
+      if (dead > 0) { dead -= dt; if (dead <= 0) { hp = 100; x = pointer.x; y = pointer.y + 200; vx = 0; vy = -900; warp = 1; sfx().tone(200, 0.6, 'sawtooth', 0.02, 1600); droid?.say('Nave nova no ar. Tenta não bater essa.', 2400); } else return; }
+      if (performance.now() - hurtAt > 6000 && hp < 100) hp = Math.min(100, hp + dt * 3);
+      if (droid && hp < 100 && over(droid.st.x, droid.st.y - droid.H, droid.W, droid.H)) { const b4 = hp; hp = Math.min(100, hp + dt * 30); if (Math.random() < dt * 20) burst(x + (Math.random() - 0.5) * 30, y + (Math.random() - 0.5) * 30, 1, 'h', 80, 0.3); if (b4 < 100 && hp >= 100) { droid.emote('♥'); droid.say('Casco 100%. Pode voltar pra guerra.', 2400); } }
+      let back = 26, gx = pointer.x - Math.sin(ang) * back, gy = pointer.y + Math.cos(ang) * back, k = 200, c = 23;
+      // held by the Force: dragged toward the grip point, shaking, choking
+      if (grip && performance.now() < grip.until) { gx = grip.x + (Math.random() - 0.5) * 10; gy = grip.y + (Math.random() - 0.5) * 10; k = 90; c = 14; hp -= dt * (grip.dps || 0); hurtAt = performance.now(); if (hp <= 0) { hp = 1; damage(5); } }
+      else grip = null;
       vx += ((gx - x) * k - vx * c) * dt; vy += ((gy - y) * k - vy * c) * dt;
       x += vx * dt; y += vy * dt;
       spd = Math.hypot(vx, vy); boost = Math.max(0, Math.min(1, (spd - 700) / 900));
@@ -612,8 +640,10 @@
       }
       for (const t of trail) t.life -= dt; while (trail.length && trail[0].life <= 0) trail.shift();
       for (const b of bolts) {
+        const ox = b.x, oy = b.y;
         b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
         for (const h of hits) { const r = h.rect(); if (r && b.life > 0 && b.x > r.left && b.x < r.right && b.y > r.top && b.y < r.bottom) { b.life = 0; burst(b.x, b.y, 10, 'y'); h.onHit(b); } }
+        if (b.life > 0) for (const f of kit.boltHooks) if (f(b, ox, oy)) { b.life = 0; break; }
         if (b.life > 0 && (b.x < 0 || b.y < 0 || b.x > innerWidth || b.y > innerHeight)) { burst(clamp(b.x, 2, innerWidth - 2), clamp(b.y, 2, innerHeight - 2), 4, 'o'); b.life = 0; }
       }
       for (let i = bolts.length - 1; i >= 0; i--) if (bolts[i].life <= 0) bolts.splice(i, 1);
@@ -621,18 +651,29 @@
     function draw(now) {
       for (const b of bolts) { const ux = b.vx / 1300, uy = b.vy / 1300; for (let k = 0; k < 8; k++) sq(b.x - ux * k * 3, b.y - uy * k * 3, 3, k < 2 ? 'W' : k < 6 ? 'r' : 'R'); }
       if (!on || !pointer.inside) return;
+      if (dead > 0) { drawCross(now); return; }
+      const lvl = dmgLevel();
+      if (lvl >= 2 && Math.random() < (lvl === 3 ? 0.7 : 0.35)) fx.push({ x: x + (Math.random() - 0.5) * 16, y: y + (Math.random() - 0.5) * 16, vx: (Math.random() - 0.5) * 30, vy: -40 - Math.random() * 40, g: -30, life: 0.6 + Math.random() * 0.5, col: lvl === 3 && Math.random() < 0.4 ? 'o' : Math.random() < 0.5 ? 'd' : 'x', s: 3 });
+      if (grip) { ag.strokeStyle = P.h; ag.globalAlpha = 0.25 + Math.random() * 0.2; ag.lineWidth = 2 * dpr; ag.beginPath(); ag.arc(x * dpr, y * dpr, (30 + Math.random() * 6) * dpr, 0, 7); ag.stroke(); ag.globalAlpha = 1; }
       for (const t of trail) { const k = t.life / t.max; sq(t.x, t.y, 2, k > 0.7 ? 'W' : k > 0.45 ? 'y' : 'o', Math.min(1, k * 1.5)); }
       if (warp > 0) { ag.strokeStyle = P.h; ag.lineWidth = 2 * dpr; for (let i = 0; i < 7; i++) { const o = (i - 3) * 7, L = 40 + warp * 180; ag.globalAlpha = warp; ag.beginPath(); ag.moveTo((x + Math.cos(ang) * o) * dpr, (y + Math.sin(ang) * o) * dpr); ag.lineTo((x + Math.cos(ang) * o - Math.sin(ang) * L) * dpr, (y + Math.sin(ang) * o + Math.cos(ang) * L) * dpr); ag.stroke(); } ag.globalAlpha = 1; }
       const dir = Math.round(ang / (Math.PI / 16)) & 31, eng = ((now / 70) | 0) & 1;
-      const img = shipFrame(eng, open > 0.5 ? 1 : 0, lock ? 1 : 0, boost > 0.4 ? 1 : 0, dir), kick = recoil * 3, bob = Math.sin(now / 500) * (spd < 30 ? 1 : 0);
-      blit(img, x - img.width * S / 2 + Math.sin(ang) * kick, y - img.height * S / 2 - Math.cos(ang) * kick + bob, S, warp > 0.5 ? 0.6 : 1);
+      const img = shipFrame(eng, open > 0.5 ? 1 : 0, lock ? 1 : 0, boost > 0.4 ? 1 : 0, dir, lvl), kick = recoil * 3, bob = Math.sin(now / 500) * (spd < 30 ? 1 : 0);
+      blit(img, x - img.width * S / 2 + Math.sin(ang) * kick, y - img.height * S / 2 - Math.cos(ang) * kick + bob, S, warp > 0.5 ? 0.6 : flash > 0 && ((now / 40) | 0) & 1 ? 0.35 : 1);
+      // hull bar under the ship while it is hurt
+      if (hp < 100 && (hp < 50 || now - hurtAt < 2500)) { const bw = 40, bx = Math.round(x - bw / 2), by = Math.round(y + 34); ag.fillStyle = P.K; ag.fillRect((bx - 1) * dpr, (by - 1) * dpr, (bw + 2) * dpr, 5 * dpr); ag.fillStyle = hp > 50 ? P.q : hp > 25 ? P.o : P.r; ag.fillRect(bx * dpr, by * dpr, Math.round(bw * hp / 100) * dpr, 3 * dpr); }
+      drawCross(now);
+    }
+    function drawCross(now) {
       const r = lock ? 7 : 4, t = (now / 300) % 1;
       ag.fillStyle = P.o;
       if (lock) for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const cx = pointer.x + sx * (r + 2 - t * 2), cy = pointer.y + sy * (r + 2 - t * 2); ag.fillRect((cx - (sx < 0 ? 0 : 4)) * dpr, cy * dpr, 5 * dpr, 2 * dpr); ag.fillRect(cx * dpr, (cy - (sy < 0 ? 0 : 4)) * dpr, 2 * dpr, 5 * dpr); }
       else { ag.fillRect((pointer.x - 1) * dpr, (pointer.y - r - 3) * dpr, 2 * dpr, 4 * dpr); ag.fillRect((pointer.x - 1) * dpr, (pointer.y + r) * dpr, 2 * dpr, 4 * dpr); ag.fillRect((pointer.x - r - 3) * dpr, (pointer.y - 1) * dpr, 4 * dpr, 2 * dpr); ag.fillRect((pointer.x + r) * dpr, (pointer.y - 1) * dpr, 4 * dpr, 2 * dpr); }
     }
-    const over = (bx, by, bw, bh) => on && pointer.inside && x > bx && x < bx + bw && y > by && y < by + bh;
-    return { step, draw, over, speed: () => (on ? spd : 0), get pos() { return on ? { x, y } : { x: pointer.x, y: pointer.y }; } };
+    function over(bx, by, bw, bh) { return on && dead <= 0 && pointer.inside && x > bx && x < bx + bw && y > by && y < by + bh; }
+    return { step, draw, over, damage, on, speed: () => (on ? spd : 0), get pos() { return on ? { x, y } : { x: pointer.x, y: pointer.y }; },
+      get alive() { return on && dead <= 0 && pointer.inside; }, get hp() { return hp; },
+      grip(gx, gy, ms, dps = 0) { if (!on || dead > 0) return; grip = { x: gx, y: gy, until: performance.now() + ms, dps }; } };
   })();
 
   for (const sel of ['.map-egg', '#egg']) hits.push({ rect: () => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return { left: r.left - 6, top: r.top - 6, right: r.right + 6, bottom: r.bottom + 6 }; }, onHit: () => { droid?.say('Acertou o invasor! Prepara a defesa...', 2000); setTimeout(() => { location.href = 'jogo.html'; }, 900); } });
@@ -677,7 +718,7 @@
         }
       }
       for (let i = ties.length - 1; i >= 0; i--) { const t = ties[i]; if (t.dead || t.x < -200 || t.x > innerWidth + 200) { ties.splice(i, 1); const k = hits.indexOf(t.hit); if (k >= 0) hits.splice(k, 1); } }
-      for (const b of green) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (b.life <= 0) { burst(b.x, b.y, 10, 'g', 240, 0.4); burst(b.x, b.y, 6, 'y', 160, 0.3); b.el.classList.remove('bonk'); void b.el.offsetWidth; b.el.classList.add('bonk'); setTimeout(() => b.el.classList.remove('bonk'), 400); } }
+      for (const b of green) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (b.life <= 0) { burst(b.x, b.y, 10, 'g', 240, 0.4); burst(b.x, b.y, 6, 'y', 160, 0.3); if (!kit.impact?.(b.x + b.vx * 0.012, b.y + b.vy * 0.012, b.el === sat ? 0.2 : 0.8)) { b.el.classList.remove('bonk'); void b.el.offsetWidth; b.el.classList.add('bonk'); setTimeout(() => b.el.classList.remove('bonk'), 400); } } }
       for (let i = green.length - 1; i >= 0; i--) if (green[i].life <= 0) green.splice(i, 1);
       // the wedge appears when Saturn is on screen
       wedge.away = Math.max(0, wedge.away - dt); wedge.shield = Math.max(0, wedge.shield - dt);
@@ -707,6 +748,14 @@
     if (!host || !cv) return {};
     const SC = 2, g = cv.getContext('2d');
     let w = 0, h = 0, bg = null, places = {};
+    const wreck = {}; // destroyed buildings: key -> time it gets rebuilt
+    const isDown = (k) => wreck[k] > performance.now();
+    function rubble(b, x0, base, ww) {
+      const hm = Math.max(2, Math.min(7, ww / 4));
+      for (let i = 0; i < ww; i++) { const t = (i - ww / 2) / (ww / 2), hh = Math.round((1 - t * t) * hm + Math.sin(i * 1.7) * 1.2); for (let y = 0; y < hh; y++) setc(b, x0 + i, base - y, y === hh - 1 ? 'm' : dither(x0 + i, base - y, 0.5) ? 'd' : 'x'); }
+      line({ set: (x, y, c) => setc(b, x, y, c) }, x0 + ww * 0.25, base - hm, x0 + ww * 0.45, base - hm - 4, 'd');
+      line({ set: (x, y, c) => setc(b, x, y, c) }, x0 + ww * 0.6, base - hm + 1, x0 + ww * 0.8, base - hm - 3, 'm');
+    }
     const horizon = (x) => Math.round(h * 0.6 + Math.sin(x / 23) * 1.5);
     const roadY = (x) => Math.round(h * 0.88 + Math.sin(x / 40) * 0.8);
     const setc = (b, x, y, c) => { b.fillStyle = P[c]; b.fillRect(x | 0, y | 0, 1, 1); };
@@ -734,19 +783,23 @@
       for (let x = 0; x < w; x++) { const hz = horizon(x); for (let y = hz; y < h; y++) { const t = (y - hz) / (h - hz); let col = t < 0.06 ? 'v' : 's'; if (t > 0.06 && t < 0.2 && dither(x, y, 1 - (t - 0.06) / 0.14)) col = 'v'; if (t > 0.55 && dither(x, y, (t - 0.55) / 0.45)) col = 'S'; setc(b, x, y, col); } }
       // moisture vaporators
       places.vapors = [];
-      for (const fxp of [0.16, 0.2, 0.25]) {
+      for (const [vi, fxp] of [0.16, 0.2, 0.25].entries()) {
         const x0 = Math.round(w * fxp), base = horizon(x0) + 3, vp = new Px(9, 30);
+        if (isDown('v' + vi)) { rubble(b, x0 - 4, base, 9); places.vapors.push({ key: 'v' + vi, dead: true, x: x0 - 4, y: base - 29, w: 9, h: 30, lx: x0, ly: base - 29 }); continue; }
         cyl(vp, 3, 6, 3, 22, ['d', 'm', 'l', 'w']); for (let y = 8; y < 28; y += 5) for (let x = 2; x < 7; x++) vp.set(x, y, x === 2 ? 'l' : 'm');
         box(vp, 1, 3, 7, 3, ['d', 'm', 'l', 'w']); line(vp, 4, 0, 4, 3, 'm'); box(vp, 2, 26, 5, 3, ['k', 'd', 'm', 'l']);
-        vp.outline('k'); vp.paint(b, x0 - 4, base - 29); places.vapors.push({ x: x0 - 4, y: base - 29, w: 9, h: 30, lx: x0, ly: base - 29 });
+        vp.outline('k'); vp.paint(b, x0 - 4, base - 29); places.vapors.push({ key: 'v' + vi, x: x0 - 4, y: base - 29, w: 9, h: 30, lx: x0, ly: base - 29 });
       }
       // adobe hut with a lit door
-      { const x0 = Math.round(w * 0.33), base = horizon(x0) + 4, hp = new Px(28, 14); sphere(hp, 14, 13, 12, ['S', 's', 'v', 'w'], { ry: 10, maxY: 13 }); for (let y = 6; y < 14; y++) for (let x = 11; x < 17; x++) if ((x - 14) ** 2 / 9 + ((y - 13) ** 2) / 49 <= 1) hp.set(x, y, 'K'); hp.outline('V'); hp.paint(b, x0 - 14, base - 14); places.hut = { x: x0 - 14, y: base - 14, w: 28, h: 14, door: [x0 - 1, base - 4] }; }
+      if (isDown('hut')) { const x0 = Math.round(w * 0.33), base = horizon(x0) + 4; rubble(b, x0 - 14, base, 28); places.hut = { key: 'hut', dead: true, x: x0 - 14, y: base - 14, w: 28, h: 14 }; }
+      else { const x0 = Math.round(w * 0.33), base = horizon(x0) + 4, hp = new Px(28, 14); sphere(hp, 14, 13, 12, ['S', 's', 'v', 'w'], { ry: 10, maxY: 13 }); for (let y = 6; y < 14; y++) for (let x = 11; x < 17; x++) if ((x - 14) ** 2 / 9 + ((y - 13) ** 2) / 49 <= 1) hp.set(x, y, 'K'); hp.outline('V'); hp.paint(b, x0 - 14, base - 14); places.hut = { key: 'hut', x: x0 - 14, y: base - 14, w: 28, h: 14, door: [x0 - 1, base - 4] }; }
       // observatory building (dome and telescope are drawn live)
-      { const x0 = Math.round(w * 0.72), base = horizon(x0) + 8, op = new Px(46, 16); box(op, 1, 0, 44, 16, ['m', 'l', 'w', 'W']); box(op, 19, 5, 8, 11, ['k', 'x', 'x', 'd']); for (let x = 5; x < 42; x += 6) { op.set(x, 4, 'b'); op.set(x + 1, 4, 'b'); } op.outline('k'); op.paint(b, x0 - 23, base - 16); places.obs = { x: x0 - 23, y: base - 44, w: 46, h: 44, cx: x0, cy: base - 16 }; }
+      if (isDown('obs')) { const x0 = Math.round(w * 0.72), base = horizon(x0) + 8; rubble(b, x0 - 23, base, 46); places.obs = { key: 'obs', dead: true, x: x0 - 23, y: base - 44, w: 46, h: 44, cx: x0, cy: base - 16 }; }
+      else { const x0 = Math.round(w * 0.72), base = horizon(x0) + 8, op = new Px(46, 16); box(op, 1, 0, 44, 16, ['m', 'l', 'w', 'W']); box(op, 19, 5, 8, 11, ['k', 'x', 'x', 'd']); for (let x = 5; x < 42; x += 6) { op.set(x, 4, 'b'); op.set(x + 1, 4, 'b'); } op.outline('k'); op.paint(b, x0 - 23, base - 16); places.obs = { key: 'obs', x: x0 - 23, y: base - 44, w: 46, h: 44, cx: x0, cy: base - 16 }; }
       // radio dishes on lattice towers
-      places.dishes = [0.84, 0.92].map((fxp) => { const x0 = Math.round(w * fxp), base = horizon(x0) + 5, tp = new Px(14, 16); for (let i = 0; i < 4; i++) { line(tp, 2 + i, 15, 6, 2, 'd'); line(tp, 11 - i, 15, 7, 2, 'd'); } for (let y = 4; y < 15; y += 4) line(tp, 4, y, 9, y, 'm'); tp.outline('k'); tp.paint(b, x0 - 7, base - 16); return { x: x0 - 9, y: base - 30, w: 18, h: 30, cx: x0, cy: base - 18, ang: Math.random() * 6, spin: 0 }; });
-      { const cx0 = Math.round(w * 0.02), cb = horizon(cx0 + 30) + 9, cp = crawlerPx(); cp.paint(b, cx0, cb - 44); places.crawler = { x: cx0, y: cb - 44, w: 60, h: 44 }; }
+      places.dishes = [0.84, 0.92].map((fxp, di) => { const x0 = Math.round(w * fxp), base = horizon(x0) + 5, tp = new Px(14, 16);
+        if (isDown('d' + di)) { rubble(b, x0 - 7, base, 14); return { key: 'd' + di, dead: true, x: x0 - 9, y: base - 30, w: 18, h: 30, cx: x0, cy: base - 18, ang: 0, spin: 0 }; } for (let i = 0; i < 4; i++) { line(tp, 2 + i, 15, 6, 2, 'd'); line(tp, 11 - i, 15, 7, 2, 'd'); } for (let y = 4; y < 15; y += 4) line(tp, 4, y, 9, y, 'm'); tp.outline('k'); tp.paint(b, x0 - 7, base - 16); return { key: 'd' + di, x: x0 - 9, y: base - 30, w: 18, h: 30, cx: x0, cy: base - 18, ang: Math.random() * 6, spin: 0 }; });
+      { const cx0 = Math.round(w * 0.02), cb = horizon(cx0 + 30) + 9; if (isDown('crawler')) { rubble(b, cx0 + 2, cb - 1, 56); places.crawler = { key: 'crawler', dead: true, x: cx0, y: cb - 44, w: 60, h: 44 }; } else { const cp = crawlerPx(); cp.paint(b, cx0, cb - 44); places.crawler = { key: 'crawler', x: cx0, y: cb - 44, w: 60, h: 44 }; } }
       // a few rocks
       for (let i = 0; i < Math.round(w / 18); i++) { const rx = (rnd() * w) | 0, ry = (horizon(rx) + 8 + rnd() * (h - horizon(rx) - 10)) | 0, rs = 1 + ((rnd() * 2.5) | 0); const rp = new Px(rs * 2 + 3, rs + 3); sphere(rp, rs + 1.5, rs + 1, rs, ['V', 'S', 's', 'v'], { maxY: rs + 1 }); rp.paint(b, rx - rs, ry - rs); }
     }
@@ -762,6 +815,7 @@
     section.addEventListener('pointerleave', () => { st.scan = null; });
     section.addEventListener('focusin', (e) => scanTarget(e.target.closest('[data-scan]')));
     function look() {
+      if (places.obs?.dead) { obsSpeak('O observatório foi pelos ares. A equipe já tá reconstruindo.', 3000); return; }
       st.eye = 5.5; sfx().tone(500, 0.25, 'sine', 0.03, 900);
       if (targetI === -1 && chart) { st.eyeChart = chart; targetI = 0; obsSpeak(`Telescópio: a constelação ${chart.name}. ${chart.items.length} estrelas, uma por ferramenta.`, 5200); return; }
       st.eyeChart = null; const t = TARGETS[targetI = (targetI + 1) % TARGETS.length]; obsSpeak(t.label, 5200);
@@ -835,18 +889,22 @@
       if (!reduce) localsStep(dt, now);
       const d = droid?.st;
       if (d && d.onEl === host && now - lastMeet > 25000) { const r = host.getBoundingClientRect(), rx = r.left + (st.x + 28) * SC; if (Math.abs(d.x + droid.W / 2 - rx) < 100) { lastMeet = now; droid.emote('♥'); droid.say('Primo rover! Viu alguma coisa no céu?', 2600); setTimeout(() => { emo('!'); say('Só a nave do visitante. O telescópio não larga dela.', 3200); }, 1300); } }
+      if (Object.values(wreck).some((at) => at && at <= now)) { for (const k in wreck) if (wreck[k] <= now) delete wreck[k]; paint(); obsSpeak('Equipe de manutenção: estrutura reconstruída.', 2600); }
       g.clearRect(0, 0, w, h); g.drawImage(bg, 0, 0);
+      for (const pl of [...places.vapors, places.hut, places.obs, ...places.dishes, places.crawler]) if (pl?.dead && wreck[pl.key] - now > 16000 && Math.random() < 0.5) { const fx0 = pl.x + 2 + Math.random() * (pl.w - 4), fy0 = pl.y + pl.h - 2 - Math.random() * 5; setc(g, fx0, fy0, pick(['o', 'y', 'O'])); setc(g, fx0, fy0 - 1 - Math.random() * 4, pick(['d', 'x', 'o'])); }
       // vaporator lights, the hut's door, dishes
-      places.vapors.forEach((v, i) => { if (((t * 1.2 + i * 0.7) | 0) % 3 === 0) setc(g, v.lx, v.ly, 'r'); });
-      if (places.hut) { const [dx, dy] = places.hut.door; for (let y = 0; y < 4; y++) for (let x = 0; x < 3; x++) setc(g, dx + x, dy + y, dither(dx + x, dy + y + ((t * 4) | 0), 0.6) ? 'y' : 'o'); }
+      places.vapors.forEach((v, i) => { if (!v.dead && ((t * 1.2 + i * 0.7) | 0) % 3 === 0) setc(g, v.lx, v.ly, 'r'); });
+      if (places.hut && !places.hut.dead) { const [dx, dy] = places.hut.door; for (let y = 0; y < 4; y++) for (let x = 0; x < 3; x++) setc(g, dx + x, dy + y, dither(dx + x, dy + y + ((t * 4) | 0), 0.6) ? 'y' : 'o'); }
       for (const ds of places.dishes) {
+        if (ds.dead) continue;
         ds.spin = Math.max(0, ds.spin - dt); ds.ang += dt * (0.3 + ds.spin * 4);
         const dw = Math.abs(Math.cos(ds.ang)) * 7 + 1.5, dp = new Px(20, 12);
         for (let y = -4; y <= 4; y++) for (let x = -9; x <= 9; x++) if ((x * x) / (dw * dw) + (y * y) / 16 <= 1) dp.set(10 + x, 6 + y, y < -1 ? 'w' : y < 2 ? 'l' : 'm');
         dp.set(10, 6, 'd'); dp.set(10, 1, 'r'); dp.outline('k'); dp.paint(g, ds.cx - 10, ds.cy - 6);
       }
       // the observatory dome, its slit following the telescope, which follows the ship
-      { const o = places.obs, r = host.getBoundingClientRect(), sp = ship.pos, dx = sp.x - (r.left + o.cx * SC), dy = sp.y - (r.top + o.cy * SC);
+      if (places.obs.dead) scopeBtn.style.width = '0px';
+      else { const o = places.obs, r = host.getBoundingClientRect(), sp = ship.pos, dx = sp.x - (r.left + o.cx * SC), dy = sp.y - (r.top + o.cy * SC);
         let goal = Math.atan2(dy, dx); if (goal > -0.15 || goal < -Math.PI + 0.15) goal = -Math.PI / 2 + Math.sin(t * 0.3) * 0.8;
         st.scope += wrapA(goal - st.scope) * Math.min(1, dt * 3);
         const dp = new Px(46, 42), ccx = 23, ccy = 25, a = st.scope;
@@ -897,7 +955,40 @@
       if (repo) { const label = `varredura: ${repo.language || 'código'}, push há ${dias(daysSince(repo.pushed_at))}`; ag.globalAlpha = 1; ag.font = `600 ${13 * dpr}px Tektur`; const tw = ag.measureText(label).width / dpr; ag.fillStyle = P.K; ag.fillRect((r.right + pad - tw - 14) * dpr, (r.top - pad - 24) * dpr, (tw + 14) * dpr, 20 * dpr); ag.fillStyle = P.h; ag.fillText(label, (r.right + pad - tw - 7) * dpr, (r.top - pad - 9) * dpr); }
       ag.globalAlpha = 1;
     }
-    return { frame, hud, groundY: () => roadY((st.x + 28) | 0) * SC };
+    // a bolt (the ship's or the Empire's) reaching the strip: buildings take hits and fall, the ground scorches
+    const HP = { v: 1, d: 2, hut: 3, obs: 5, crawler: 6 }, hpLeft = {};
+    function impact(cx, cy, power = 1) {
+      if (!visible || !bg) return false;
+      const r = host.getBoundingClientRect(); if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return false;
+      const [sx, sy] = toScene(cx, cy);
+      const jw = locals.jawas.find((j) => sx > j.x - 2 && sx < j.x + 12 && sy > roadY(j.x | 0) - 16 && sy < roadY(j.x | 0) + 2);
+      if (jw) { burst(cx, cy, 8, 'j', 200, 0.5); locals.scare(); return true; }
+      const all = [...places.vapors, places.hut, places.obs, ...places.dishes, places.crawler].filter((pl) => pl && !pl.dead);
+      const pl = all.find((q) => inBox(q, sx, sy));
+      if (pl) {
+        const kind = pl.key.replace(/\d/, ''); hpLeft[pl.key] = (hpLeft[pl.key] ?? HP[kind]) - power;
+        burst(cx, cy, 10, 'y', 240, 0.4); burst(cx, cy, 6, 'm', 200, 0.6); sfx().tone(160, 0.12, 'square', 0.03, 80);
+        if (hpLeft[pl.key] <= 0) {
+          delete hpLeft[pl.key]; wreck[pl.key] = performance.now() + 30000; paint();
+          const ex = r.left + (pl.x + pl.w / 2) * SC, ey = r.top + (pl.y + pl.h * 0.6) * SC, big = pl.w * SC;
+          burst(ex, ey, 18 + big / 4, 'o', 300 + big * 2, 0.9); burst(ex, ey, 12 + big / 6, 'y', 240 + big, 0.6); burst(ex, ey, 10 + big / 6, 'd', 200 + big, 1.3); burst(ex, ey, 8, 'v', 180, 1);
+          kit.shock?.(ex, ey, big * 0.9);
+          sfx().tone(70, 0.6, 'sawtooth', 0.05, 30);
+          const LINES = { v: 'Lá se foi um vaporizador. Adeus, água.', d: 'A antena caiu! Sem sinal do GitHub por enquanto.', hut: 'A cantina! Ainda bem que tava fechada.', obs: 'O observatório! Eu adorava aquele telescópio...', crawler: 'O sandcrawler dos jawas explodiu! Eles vão ficar uma fera.' };
+          obsSpeak(LINES[kind], 3600, pl.x + pl.w / 2, pl.y);
+          if (kind === 'crawler') locals.scare();
+        }
+        return true;
+      }
+      if (sy > horizon(sx | 0) + 1) { // the ground: a small scorch that stays until the strip repaints
+        const bctx = bg.getContext('2d'); for (let y = -2; y <= 2; y++) for (let x = -4; x <= 4; x++) if ((x * x) / 16 + (y * y) / 4 <= 1) { const X = (sx | 0) + x, Y = (sy | 0) + y; setc(bctx, X, Y, (x * x) / 16 + (y * y) / 4 < 0.4 ? 'K' : dither(X, Y, 0.5) ? 'S' : 'V'); }
+        burst(cx, cy, 10, 'v', 220, 0.6); burst(cx, cy, 4, 'o', 160, 0.3); sfx().tone(200, 0.08, 'square', 0.02, 90);
+        return true;
+      }
+      return false;
+    }
+    kit.boltHooks.push((b) => impact(b.x, b.y, b.power || 1));
+    return { frame, hud, impact, groundY: () => roadY((st.x + 28) | 0) * SC };
   })();
 
   // ======================================================================
@@ -912,15 +1003,22 @@
     if (droid && !reduce) droid.step(dt, now);
     rover.frame?.(dt, now);
     empire.step?.(dt, now);
+    for (const L of kit.layers) L.step?.(dt, now);
     ag.clearRect(0, 0, arena.width, arena.height);
     rover.hud?.(now);
+    for (const L of kit.layers) L.back?.(now);
     empire.draw?.(now);
+    for (const L of kit.layers) L.draw?.(now);
     droid?.draw(now);
     for (const p of fx) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; p.life -= dt; if (p.life > 0) sq(p.x, p.y, p.s, p.col); }
     for (let i = fx.length - 1; i >= 0; i--) if (fx[i].life <= 0) fx.splice(i, 1);
     ship.draw(now);
+    for (const L of kit.layers) L.over?.(now);
   }
   requestAnimationFrame(loop);
+  // the destruction layer (js/caos.js) builds on these
+  Object.assign(kit, { P, C, Px, sphere, cyl, box, box3, line, make, blit, sq, ag, hits, fx, burst, holo, ship, droid, rover, pointer, clamp, pick, wrapA, dither, ramp, lambert, sfx, reduce, fine, get dpr() { return dpr; } });
+  window.pixelKit = kit;
 
   // route icons and the little ship on the rail
   document.querySelectorAll('.route-ic').forEach((cv) => {

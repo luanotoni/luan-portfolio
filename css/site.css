@@ -330,3 +330,13 @@ html.ship-cursor, html.ship-cursor * { cursor: none !important; }
   .p-leds { width: 60vw; left: auto; right: -22vw; bottom: auto; top: -10vw; opacity: 0.5; }
   .p-contact { width: 80vw; top: var(--space-md); opacity: 0.6; }
 }
+
+/* ---------- chaos: glyphs knocked out of line, rebuilt from backup, planets re-forming, the page shaking ---------- */
+.ch.cracked { color: color-mix(in srgb, currentColor 70%, var(--color-accent)); text-shadow: 0 0 6px color-mix(in oklch, var(--color-accent) 60%, transparent); }
+.ch.rebuilt { animation: rebuilt 700ms steps(5) both; }
+@keyframes rebuilt { 0% { opacity: 0; color: var(--color-holo); } 60% { opacity: 1; color: var(--color-holo); } }
+img.reform { animation: reform 1200ms var(--ease-out) both; }
+@keyframes reform { 0% { opacity: 0; scale: 0.2; filter: brightness(3); } 70% { opacity: 1; filter: brightness(1.4); } }
+.quake main, .quake .hero, .quake .foot { animation: quake 420ms steps(6); }
+@keyframes quake { 20% { translate: 6px -4px; } 40% { translate: -5px 3px; } 60% { translate: 4px 2px; } 80% { translate: -2px -2px; } }
+@media (prefers-reduced-motion: reduce) { .ch.rebuilt, img.reform, .quake main, .quake .hero, .quake .foot { animation: none; } }

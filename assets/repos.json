@@ -1,6 +1,18 @@
 {
- "saved": "2026-11-05T09:51:30+00:00",
+ "saved": "2026-11-06T17:02:02+00:00",
  "repos": [
+  {
+   "name": "luan-portfolio",
+   "description": "Portfólio do Luan Otoni: uma galáxia em pixel art com projetos lidos do GitHub",
+   "html_url": "https://github.com/luanotoni/luan-portfolio",
+   "homepage": null,
+   "language": "JavaScript",
+   "topics": [],
+   "stargazers_count": 0,
+   "pushed_at": "2026-11-05T09:52:53Z",
+   "fork": false,
+   "archived": false
+  },
   {
    "name": "conduit-aws-terraform",
    "description": "Legacy 2017 Django app modernized and deployed on AWS with Terraform: ECS Fargate, RDS, CloudFront, WAF, OIDC CI/CD, Trivy gates, OpenTelemetry tracing and a tested SLO alarm",
