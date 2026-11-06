@@ -368,6 +368,9 @@ function playLoops(scope) {
     ['Abrir o GitHub', 'github.com/luanotoni', () => open('https://github.com/luanotoni', '_blank', 'noopener')],
     ['Copiar o e-mail', 'luan.otoni.dev@gmail.com', () => navigator.clipboard?.writeText('luan.otoni.dev@gmail.com')],
     ['Ligar ou desligar o som', 'bipes e lasers', () => document.getElementById('sfx')?.click()],
+    ...(matchMedia('(prefers-reduced-motion: reduce)').matches ? [] : [['Chamar os stormtroopers', 'um esquadrão do Império', () => document.dispatchEvent(new CustomEvent('imperio', { detail: 'tropa' }))],
+    ['Chamar o Vader', matchMedia('(hover: hover) and (pointer: fine)').matches ? 'ele traz o sabre' : 'toque nele pra desintegrar', () => document.dispatchEvent(new CustomEvent('imperio', { detail: 'lorde' }))],
+    ['Estação de batalha', 'carregar o superlaser', () => { travel('#topo'); setTimeout(() => document.dispatchEvent(new CustomEvent('imperio', { detail: 'estacao' })), 900); }]]),
     ['Defesa da VPC', 'o jogo escondido', () => hyperspace(() => { location.href = 'jogo.html'; })],
   ];
   const norm = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

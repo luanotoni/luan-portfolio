@@ -6,6 +6,9 @@
   const { P, make, ag, hits, burst, droid, clamp, pick, sfx, dither } = K;
   const D = () => K.dpr;
   const say = (t, ms = 2800) => droid?.say(t, ms);
+  // lines for things the visitor did not trigger: shown, but kept out of the live region
+  const bubble = document.getElementById('droid-say');
+  K.quiet = (t, ms = 3000) => { if (!droid) return; bubble?.setAttribute('aria-live', 'off'); droid.say(t, ms); setTimeout(() => bubble?.removeAttribute('aria-live'), 60); };
   const cool = {};
   const once = (k, ms) => { const n = performance.now(); if ((cool[k] || 0) > n) return false; cool[k] = n + ms; return true; };
   K.once = once;
@@ -144,12 +147,12 @@
     for (const h of broken) {
       if (!h.isConnected) { broken.delete(h); continue; }
       if (now < h._back) continue;
-      for (const s of h._ch || []) {
-        if (!s._gone && !s.classList.contains('cracked')) continue;
-        s._gone = false; s.style.opacity = ''; s.style.fillOpacity = ''; s.style.position = ''; s.style.left = ''; s.style.top = '';
-        s.classList.remove('cracked'); s.classList.add('rebuilt'); setTimeout(() => s.classList.remove('rebuilt'), 700);
-      }
-      h._lost = 0; h._fell = false; broken.delete(h);
+      // back to plain text nodes, so screen readers read words again; the lost glyphs flicker back in
+      const lost = (h._ch || []).filter((s) => s._gone).map((s) => s.textContent);
+      for (const s of h._ch || []) if (s.isConnected) s.replaceWith(s.textContent);
+      if (h instanceof SVGTextElement) h.textContent = h.textContent; else h.normalize();
+      h._ch = null; h._lost = 0; h._fell = false; broken.delete(h);
+      if (lost.length) { h.classList.remove('rebuilt'); void h.getBoundingClientRect(); h.classList.add('rebuilt'); setTimeout(() => h.classList.remove('rebuilt'), 700); }
     }
   }
   function svgTextAt(t, x, y) {
@@ -168,7 +171,7 @@
   function bodyOf(img) {
     let b = bodies.get(img); if (b) return b;
     if (!img.complete || !img.naturalWidth) return null;
-    const cap = img.classList.contains('pixelated') ? img.naturalWidth : 200;
+    const cap = img.classList.contains('pixelated') ? img.naturalWidth : Math.min(640, Math.round((img.offsetWidth || 300) * Math.min(2, devicePixelRatio || 1)));
     const w = Math.min(img.naturalWidth, cap), h = Math.max(1, Math.round(w * img.naturalHeight / img.naturalWidth));
     const [cv, g] = make(w, h); g.drawImage(img, 0, 0, w, h);
     let ok = true; try { g.getImageData(0, 0, 1, 1); } catch { ok = false; }
@@ -204,7 +207,7 @@
   }
   function hitBody(b, x, y, pw, L) {
     if (b.ok) { crater(b, L.u * b.cv.width, L.v * b.cv.height, pw); b.img.src = b.cv.toDataURL(); b.img.classList.add('pixelated'); }
-    b.hp -= pw;
+    b.hp -= pw; b.hitAt = performance.now();
     burst(x, y, 10, L.col || 'o', 260, 0.6); burst(x, y, 5, 'y', 180, 0.3); sfx().tone(140, 0.12, 'square', 0.03, 60);
     if (b.hp <= 0) breakBody(b);
     else if (b.hp < b.max * 0.35 && NAME(b.img) && once('hp' + b.img.className, 20000)) say(`Pega leve ${AT[NAME(b.img)]}! Já tá cheia de cratera.`, 2600);
@@ -217,15 +220,17 @@
     b.img.style.opacity = '0';
     burst(L.cx, L.cy, 30, 'o', 520, 0.9); burst(L.cx, L.cy, 20, 'y', 380, 0.6);
     K.ring(L.cx, L.cy, L.w * 0.9, 'y');
-    if (big) { K.ring(L.cx, L.cy, L.w * 2.2, 'c', true); K.flash = cause === 'station' ? 0.7 : 0.35; K.quake(600); }
+    if (big) { K.ring(L.cx, L.cy, L.w * 2.2, 'c', true); if (cause === 'station') K.flash = 0.25; else { K.flash = 0.35; K.quake(600); } }
     sfx().tone(60, 0.9, 'sawtooth', 0.06, 25);
     const n = NAME(b.img);
-    if (cause === 'station' && n) say(`A estação de batalha desintegrou ${n}! Em 24 segundos ela se recompõe.`, 3600);
+    if (cause === 'station' && n) K.quiet(`A estação de batalha desintegrou ${n}! Em 24 segundos ela se recompõe.`, 3600);
     else if (n) say(pick([`Você desintegrou ${n}! Volta em 24 segundos.`, `Lá se foi ${n}. Recompondo os pixels...`]), 3200);
     else if (once('photo', 15000)) say('A foto virou pixel. Literalmente.', 2400);
   }
   function restoreBodies(now) {
     for (const b of bodies.values()) {
+      // twenty seconds without a hit and the craters heal
+      if (!b.gone && b.hp < b.max && now - b.hitAt > 20000) { b.hp = b.max; b.img.addEventListener('load', () => { b.g.clearRect(0, 0, b.cv.width, b.cv.height); b.g.drawImage(b.img, 0, 0, b.cv.width, b.cv.height); }, { once: true }); b.img.src = b.orig; if (b.orig.startsWith('http')) b.img.classList.remove('pixelated'); continue; }
       if (!b.gone || now < b.back) continue;
       b.gone = false; b.hp = b.max;
       b.img.addEventListener('load', () => { b.g.clearRect(0, 0, b.cv.width, b.cv.height); b.g.drawImage(b.img, 0, 0, b.cv.width, b.cv.height); }, { once: true });

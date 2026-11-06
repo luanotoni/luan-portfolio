@@ -601,7 +601,7 @@
         burst(x, y, 40, 'o', 520, 0.9); burst(x, y, 24, 'y', 360, 0.6); burst(x, y, 16, 'd', 300, 1.2); burst(x, y, 10, 'l', 420, 1);
         sfx().tone(80, 0.7, 'sawtooth', 0.06, 30);
         document.dispatchEvent(new CustomEvent('ship-down', { detail: deaths }));
-        droid?.emote('!'); droid?.say(pick(['A nave explodiu! Calma, eu tenho backup.', 'Perdemos a nave! Restaurando do último snapshot...', 'Nave abatida! Subindo outra réplica.']), 3000);
+        droid?.emote('!'); kit.quiet?.(pick(['A nave explodiu! Calma, eu tenho backup.', 'Perdemos a nave! Restaurando do último snapshot...', 'Nave abatida! Subindo outra réplica.']), 3000);
       } else if (hp <= 25 && droid && !droid.st.sleep) { droid.emote('!'); if (Math.random() < 0.5) droid.say(pick(['Casco crítico! Passa a nave em cima de mim que eu conserto.', 'A nave tá pegando fogo! Vem pra cá!']), 2600); }
     }
     document.addEventListener('pointerover', (e) => { lock = !!e.target.closest?.('a, button, [role="button"], input, label, summary'); });
@@ -718,7 +718,7 @@
         }
       }
       for (let i = ties.length - 1; i >= 0; i--) { const t = ties[i]; if (t.dead || t.x < -200 || t.x > innerWidth + 200) { ties.splice(i, 1); const k = hits.indexOf(t.hit); if (k >= 0) hits.splice(k, 1); } }
-      for (const b of green) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (b.life <= 0) { burst(b.x, b.y, 10, 'g', 240, 0.4); burst(b.x, b.y, 6, 'y', 160, 0.3); if (!kit.impact?.(b.x + b.vx * 0.012, b.y + b.vy * 0.012, b.el === sat ? 0.2 : 0.8)) { b.el.classList.remove('bonk'); void b.el.offsetWidth; b.el.classList.add('bonk'); setTimeout(() => b.el.classList.remove('bonk'), 400); } } }
+      for (const b of green) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (b.life <= 0) { burst(b.x, b.y, 10, 'g', 240, 0.4); burst(b.x, b.y, 6, 'y', 160, 0.3); b.el.classList.remove('bonk'); void b.el.offsetWidth; b.el.classList.add('bonk'); setTimeout(() => b.el.classList.remove('bonk'), 400); } }
       for (let i = green.length - 1; i >= 0; i--) if (green[i].life <= 0) green.splice(i, 1);
       // the wedge appears when Saturn is on screen
       wedge.away = Math.max(0, wedge.away - dt); wedge.shield = Math.max(0, wedge.shield - dt);

@@ -3,6 +3,7 @@
  * axes: dark/techno-display/warm · posture: Restrained · contrast: pass · fold: pass · v2.0.0 */
 /* Hallmark · pre-emit critique: P4 H4 E4 S5 R3 V5 · weakest: R, a cursor ship, a droid and a rover can crowd the reading; the droid walks only on what is on screen, idles most of the time, and the ship fires only on empty space */
 /* Hallmark · waive 80 · C1-CD, the rover, the starfighter, the imperial fighters and wedge, the jawas, and the observatory strip are interactive pixel figures the owner asked for, each under 160px · C1-CD is the site's tamagotchi and the rover scans the project the pointer is on */
+/* Hallmark · finish-review round 5: subagent · fix · 8 findings · 8 resolved (enemy fire no longer wrecks text on its own, craters heal after 20s at display resolution, troopers off the hero name, Saltar hides the Empire under reduced motion, automatic lines kept out of the live region, glyph spans unwrapped on restore, blaster and helmet readable, automatic flash at 0.25) · destruction stays visitor-triggered and self-restoring */
 /* Hallmark · finish-review round 4: subagent · fix · 4 findings · 4 resolved (jawas readable, sandcrawler redrawn in rust, wedge bigger and facing Saturn, fighters routed through the emptiest band and aimed at headings) · kept the space-invader egg, the owner's door to the game */
 /* Hallmark · finish-review round 3: subagent · fix · 4 findings · 4 resolved (droid re-placed on resize and spawn, greeting short and once per visit, Saltar placeholder, Sobre measure) · gate 58 left as a NOTE, not waivable */
 /* Hallmark · finish-review round 2: subagent · fix · 6 findings · 6 resolved (hologram and droid kept off the hero copy, one hologram at a time, rover at droid scale and clear of the dome with the beam cut at the strip, stamp updated, Mars out of the eyepiece) · suggestions taken: star chart drives the telescope and C1-CD, copy e-mail answered by a hologram */
@@ -333,10 +334,10 @@ html.ship-cursor, html.ship-cursor * { cursor: none !important; }
 
 /* ---------- chaos: glyphs knocked out of line, rebuilt from backup, planets re-forming, the page shaking ---------- */
 .ch.cracked { color: color-mix(in srgb, currentColor 70%, var(--color-accent)); text-shadow: 0 0 6px color-mix(in oklch, var(--color-accent) 60%, transparent); }
-.ch.rebuilt { animation: rebuilt 700ms steps(5) both; }
+h1.rebuilt, .rebuilt { animation: rebuilt 700ms steps(5) both; }
 @keyframes rebuilt { 0% { opacity: 0; color: var(--color-holo); } 60% { opacity: 1; color: var(--color-holo); } }
 img.reform { animation: reform 1200ms var(--ease-out) both; }
 @keyframes reform { 0% { opacity: 0; scale: 0.2; filter: brightness(3); } 70% { opacity: 1; filter: brightness(1.4); } }
 .quake main, .quake .hero, .quake .foot { animation: quake 420ms steps(6); }
 @keyframes quake { 20% { translate: 6px -4px; } 40% { translate: -5px 3px; } 60% { translate: 4px 2px; } 80% { translate: -2px -2px; } }
-@media (prefers-reduced-motion: reduce) { .ch.rebuilt, img.reform, .quake main, .quake .hero, .quake .foot { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rebuilt, img.reform, .quake main, .quake .hero, .quake .foot { animation: none; } }

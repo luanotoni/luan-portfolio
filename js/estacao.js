@@ -6,7 +6,7 @@
   if (!K || K.reduce || !K.worldHit) return;
   const { P, Px, sphere, ag, hits, burst, droid, clamp, pick, sfx, dither, ramp, lambert } = K;
   const D = () => K.dpr;
-  const say = (t, ms = 3000) => droid?.say(t, ms);
+  const say = (t, ms = 3000) => droid?.say(t, ms), quiet = (t, ms = 3000) => (K.quiet || say)(t, ms);
   const hero = document.querySelector('.hero');
   if (!hero) return;
 
@@ -86,11 +86,11 @@
 
   function step(dt, now) {
     st.t += dt; geom();
-    if (st.gone) { if (now > st.back) { st.gone = false; st.hp = 30; st.holes = []; st.dirty = true; st.next = now + 40000; if (K.once('st-back', 1000)) say('O Império montou outra estação de batalha. Claro que montou.', 3200); } return; }
+    if (st.gone) { if (now > st.back) { st.gone = false; st.hp = 30; st.holes = []; st.dirty = true; st.next = now + 40000; if (K.once('st-back', 1000)) quiet('O Império montou outra estação de batalha. Claro que montou.', 3200); } return; }
     if (st.on && !st.shown) { st.shown = true; }
     if (!st.charge && !st.fire && now > st.next && st.on && !document.querySelector('dialog[open]')) {
       st.target = pickTarget();
-      if (st.target) { st.charge = 0.001; droid?.emote('!'); say('A estação tá carregando o superlaser! Atira no duto embaixo da trincheira!', 4200); sfx().tone(80, 5, 'sawtooth', 0.015, 400); }
+      if (st.target) { st.charge = 0.001; droid?.emote('!'); quiet('A estação tá carregando o superlaser! Atira no duto embaixo da trincheira!', 4200); sfx().tone(80, 5, 'sawtooth', 0.015, 400); }
       else st.next = now + 15000;
     }
     if (st.charge) {
@@ -106,7 +106,7 @@
   }
   function draw(now) {
     if (!st.on) return;
-    if (st.dirty || st.hp < 15) { st.cv = stationPx(st.R, { holes: st.holes, charge: st.charge || (st.fire ? 1 : 0), hot: st.hp < 15, t: st.t }).canvas(st.cv); st.dirty = false; }
+    if (st.dirty || (st.hp < 15 && now - (st.drawn || 0) > 100)) { st.drawn = now; st.cv = stationPx(st.R, { holes: st.holes, charge: st.charge || (st.fire ? 1 : 0), hot: st.hp < 15, t: st.t }).canvas(st.cv); st.dirty = false; }
     const w = st.cv.width;
     K.blit(st.cv, st.x - (w * st.S) / 2, st.y - (w * st.S) / 2, st.S);
     const d = D(), [px, py] = portXY();
